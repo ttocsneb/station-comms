@@ -1,0 +1,17 @@
+[package]
+name = "station-comms"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+color-eyre = "0.6.2"
+rppal = "0.14.1"
+scode-rs = { path = "../scode-rs" }
+serde = { version = "1.0.185", features = ["derive"] }
+serde_json = "1.0.105"
+paho-mqtt = "0.12.2"
+ordoo = "0.1.1"
+chrono = "0.4.31"
+lazy_static = "1.4.0"
