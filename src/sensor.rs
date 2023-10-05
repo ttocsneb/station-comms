@@ -4,9 +4,11 @@ use std::{
     collections::{btree_map, BTreeMap},
     fmt::Display,
     iter::Map,
-    sync::Arc,
+    sync::{Arc, Mutex},
     time::Instant,
 };
+
+use crate::station::Rule;
 
 #[derive(Debug)]
 pub struct Sensor {
@@ -109,6 +111,43 @@ impl Sensors {
     #[inline]
     pub fn iter_mut(&mut self) -> <&mut Sensors as IntoIterator>::IntoIter {
         self.into_iter()
+    }
+
+    pub fn autos_callback(sensors: &Arc<Mutex<Sensors>>) -> (Rule, impl Fn(&CodeSend) -> bool) {
+        let sensors = sensors.clone();
+        (Rule::new(b'M', 102), move |code| {
+            let mut val: i64 = 0;
+            for p in &code.params {
+                match p.letter {
+                    b'E' => {
+                        let v = p.value.as_borrowed().cast_u8().unwrap();
+                        val |= 1 << v
+                    }
+                    b'D' => {
+                        let v = p.value.as_borrowed().cast_u8().unwrap();
+                        val &= !(1 << v)
+                    }
+                    b'V' => {
+                        let v = p.value.as_borrowed().cast_i64().unwrap();
+                        val = v
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            let mut s = sensors.lock().unwrap();
+            for sensor in s.iter_mut() {
+                sensor.auto = (val & (1 << sensor.id)) != 0;
+            }
+            true
+        })
+    }
+
+    pub fn sensor_callback(sensor: &Arc<Mutex<Self>>) -> (Rule, impl Fn(&CodeSend) -> bool) {
+        let sensor = sensor.clone();
+        (Rule::letter(b'S'), move |code| {
+            sensor.lock().unwrap().put(code);
+            true
+        })
     }
 }
 
