@@ -1,0 +1,13 @@
+[Unit]
+Description=Weather Station Communications
+After=mosquitto.service
+Wants=network.target
+
+[Service]
+ExecStart=/usr/local/bin/station-comms /etc/station-comms.toml
+Type=simple
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
