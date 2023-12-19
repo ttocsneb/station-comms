@@ -30,6 +30,7 @@ impl Display for Sensor {
     }
 }
 
+#[derive(Debug)]
 pub struct Sensors {
     sensors: BTreeMap<u8, Sensor>,
     map: BTreeMap<Arc<str>, u8>,

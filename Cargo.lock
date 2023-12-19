@@ -778,6 +778,7 @@ checksum = "1ad4cc8da4ef723ed60bced201181d83791ad433213d8c24efffda1eec85d741"
 [[package]]
 name = "scode-rs"
 version = "0.1.0"
+source = "git+https://github.com/ttocsneb/scode-rs.git?rev=5fe964b#5fe964b32ccab12bf0b99f781fa9ac9d5008f405"
 dependencies = [
  "bindgen",
  "cc",

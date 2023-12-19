@@ -1,5 +1,6 @@
 use clap::Parser;
 use std::{
+    collections::HashMap,
     path::PathBuf,
     sync::{mpsc, Arc, Mutex},
     thread,
@@ -89,7 +90,7 @@ fn main() -> Result<()> {
     let commands = Arc::new(CommandManager::new(station_tx));
 
     let mut client = Client::new(conf.mqtt.host)?;
-    client.connect(ConnectOptions::new_v5())?;
+    client.connect(ConnectOptions::new())?;
     if let Some(timeout) = conf.mqtt.timeout {
         client.set_timeout(Duration::from_secs_f32(timeout));
     }
@@ -235,11 +236,20 @@ fn main() -> Result<()> {
             .collect()
     }
 
+    let mut last_time_set = chrono::offset::Local::now();
+
     loop {
-        let rapid = on_update.recv().unwrap();
+        let is_rapid = on_update.recv().unwrap();
         get_updates(sensors.clone(), commands.clone())?;
 
+        if (chrono::offset::Local::now() - last_time_set).num_hours() >= 1 {
+            last_time_set = chrono::offset::Local::now();
+            commands.command(set_clock_code());
+        }
+
         let s = sensors.lock().unwrap();
+
+        println!("{s:?}");
 
         let temp = s.get("temperature");
         let humi = s.get("humidity");
@@ -266,25 +276,29 @@ fn main() -> Result<()> {
         let update = Update {
             time: chrono::Local::now().to_rfc3339(),
             id: conf.mqtt.id.to_owned(),
-            winddir: map_sensor(s.get("wind heading")),
-            windspd: map_sensor(s.get("wind speed")),
-            windgustspd_2m: map_sensor(s.get("gust 2m wind speed")),
-            windgustdir_2m: map_sensor(s.get("gust 2m wind heading")),
-            windspd_avg2m: map_sensor(s.get("avg 2m wind speed")),
-            winddir_avg2m: map_sensor(s.get("avg 2m wind heading")),
-            windspd_avg10m: map_sensor(s.get("avg 10m wind speed")),
-            winddir_avg10m: map_sensor(s.get("avg 10m wind heading")),
-            windgustspd_10m: map_sensor(s.get("gust 10m wind speed")),
-            windgustdir_10m: map_sensor(s.get("gust 10m wind heading")),
-            humidity: map_sensor(s.get("humidity")),
-            temp: map_sensor(s.get("temperature")),
-            rain_1h: map_sensor(s.get("rain hour")),
-            dailyrain: map_sensor(s.get("rain day")),
-            barom: map_sensor(s.get("pressure")),
-            uv: map_sensor(s.get("uv")),
-            dewpoint: dewp,
+            sensors: HashMap::from_iter(
+                [
+                    ("winddir", map_sensor(s.get("wind heading"))),
+                    ("windspd", map_sensor(s.get("wind speed"))),
+                    ("windgustspd-2m", map_sensor(s.get("gust 2m wind speed"))),
+                    ("windgustdir-2m", map_sensor(s.get("gust 2m wind heading"))),
+                    ("windspd-avg2m", map_sensor(s.get("avg 2m wind speed"))),
+                    ("winddir-avg2m", map_sensor(s.get("avg 2m wind heading"))),
+                    ("windspd-avg10m", map_sensor(s.get("avg 10m wind speed"))),
+                    ("winddir-avg10m", map_sensor(s.get("avg 10m wind heading"))),
+                    ("humidity", map_sensor(s.get("humidity"))),
+                    ("temp", map_sensor(s.get("temperature"))),
+                    ("rain-1h", map_sensor(s.get("rain hour"))),
+                    ("dailyrain", map_sensor(s.get("rain day"))),
+                    ("barom", map_sensor(s.get("pressure"))),
+                    ("uv", map_sensor(s.get("uv"))),
+                    ("dewpoint", dewp),
+                ]
+                .into_iter()
+                .map(|(k, v)| (k.into(), v)),
+            ),
         };
 
-        mqtt.publish_update(update, rapid)?;
+        mqtt.publish_update(update, is_rapid)?;
     }
 }

@@ -1,7 +1,7 @@
 use color_eyre::Result;
 use ordoo::or_do;
 use serde::{Deserialize, Serialize};
-use std::sync::mpsc;
+use std::{collections::HashMap, sync::mpsc};
 
 use paho_mqtt::{Client, Message};
 
@@ -87,32 +87,7 @@ pub struct SensorValue {
 pub struct Update {
     pub time: String,
     pub id: String,
-    pub winddir: Vec<SensorValue>,
-    pub windspd: Vec<SensorValue>,
-    #[serde(rename = "windgustspd-2m")]
-    pub windgustspd_2m: Vec<SensorValue>,
-    #[serde(rename = "windgustdir-2m")]
-    pub windgustdir_2m: Vec<SensorValue>,
-    #[serde(rename = "windspd-avg2m")]
-    pub windspd_avg2m: Vec<SensorValue>,
-    #[serde(rename = "winddir-avg2m")]
-    pub winddir_avg2m: Vec<SensorValue>,
-    #[serde(rename = "windspd-avg10m")]
-    pub windspd_avg10m: Vec<SensorValue>,
-    #[serde(rename = "winddir-avg10m")]
-    pub winddir_avg10m: Vec<SensorValue>,
-    #[serde(rename = "windgustspd-10m")]
-    pub windgustspd_10m: Vec<SensorValue>,
-    #[serde(rename = "windgustdir-10m")]
-    pub windgustdir_10m: Vec<SensorValue>,
-    pub humidity: Vec<SensorValue>,
-    pub dewpoint: Vec<SensorValue>,
-    pub temp: Vec<SensorValue>,
-    #[serde(rename = "rain-1h")]
-    pub rain_1h: Vec<SensorValue>,
-    pub dailyrain: Vec<SensorValue>,
-    pub barom: Vec<SensorValue>,
-    pub uv: Vec<SensorValue>,
+    pub sensors: HashMap<String, Vec<SensorValue>>,
 }
 
 #[derive(Debug, Serialize)]
